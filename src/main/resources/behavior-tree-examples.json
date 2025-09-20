@@ -1,0 +1,198 @@
+{
+  "residentTree": {
+    "name": "ResidentTree",
+    "description": "普通居民的行为树配置",
+    "rootNode": {
+      "name": "RootSelector",
+      "type": "selector",
+      "children": [
+        {
+          "name": "UrgentNeedsBranch",
+          "type": "selector",
+          "children": [
+            {
+              "name": "VeryHungryBranch",
+              "type": "sequence",
+              "children": [
+                {
+                  "name": "VeryHungry",
+                  "type": "condition"
+                },
+                {
+                  "name": "EmergencyEat",
+                  "type": "action"
+                }
+              ]
+            },
+            {
+              "name": "VeryTiredBranch",
+              "type": "sequence",
+              "children": [
+                {
+                  "name": "VeryTired",
+                  "type": "condition"
+                },
+                {
+                  "name": "EmergencySleep",
+                  "type": "action"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "BasicNeedsBranch",
+          "type": "selector",
+          "children": [
+            {
+              "name": "HungerBranch",
+              "type": "sequence",
+              "children": [
+                {
+                  "name": "IsHungry",
+                  "type": "condition"
+                },
+                {
+                  "name": "Eat",
+                  "type": "action"
+                }
+              ]
+            },
+            {
+              "name": "TiredBranch",
+              "type": "sequence",
+              "children": [
+                {
+                  "name": "IsTired",
+                  "type": "condition"
+                },
+                {
+                  "name": "Sleep",
+                  "type": "action"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "SocialBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "HasNearbyAgents",
+              "type": "condition"
+            },
+            {
+              "name": "Socialize",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "workerTree": {
+    "name": "WorkerTree",
+    "description": "工人的行为树配置",
+    "rootNode": {
+      "name": "WorkerRoot",
+      "type": "selector",
+      "children": [
+        {
+          "name": "WorkBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "ShouldWork",
+              "type": "condition"
+            },
+            {
+              "name": "Work",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "name": "RestBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "IsTired",
+              "type": "condition"
+            },
+            {
+              "name": "Sleep",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "name": "EatBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "IsHungry",
+              "type": "condition"
+            },
+            {
+              "name": "Eat",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "merchantTree": {
+    "name": "MerchantTree",
+    "description": "商人的行为树配置",
+    "rootNode": {
+      "name": "MerchantRoot",
+      "type": "selector",
+      "children": [
+        {
+          "name": "TradeBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "HasCustomers",
+              "type": "condition"
+            },
+            {
+              "name": "Trade",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "name": "SocialBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "HasNearbyAgents",
+              "type": "condition"
+            },
+            {
+              "name": "Socialize",
+              "type": "action"
+            }
+          ]
+        },
+        {
+          "name": "RestBranch",
+          "type": "sequence",
+          "children": [
+            {
+              "name": "IsTired",
+              "type": "condition"
+            },
+            {
+              "name": "Sleep",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

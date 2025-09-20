@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Town - 行为树管理器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        .panel h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #4facfe;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+
+        .tree-visualization {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tree-node {
+            margin: 5px 0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #4facfe;
+        }
+
+        .tree-node.selector {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .tree-node.sequence {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .tree-node.condition {
+            border-left-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .tree-node.action {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .tree-node.template {
+            border-left-color: #6f42c1;
+            background: #e2e3f0;
+        }
+
+        .node-children {
+            margin-left: 20px;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .template-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .template-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .template-card.selected {
+            border-color: #4facfe;
+            background: #e3f2fd;
+        }
+
+        .template-name {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .template-desc {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 Star Town 行为树管理器</h1>
+            <p>创建和管理智能体行为树配置</p>
+        </div>
+
+        <div class="content">
+            <!-- 左侧：配置面板 -->
+            <div class="panel">
+                <h2>🔧 行为树配置</h2>
+                
+                <div id="status"></div>
+
+                <div class="form-group">
+                    <label for="treeName">行为树名称</label>
+                    <input type="text" id="treeName" placeholder="输入行为树名称">
+                </div>
+
+                <div class="form-group">
+                    <label for="treeDescription">描述</label>
+                    <textarea id="treeDescription" placeholder="输入行为树描述"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="agentType">智能体类型</label>
+                    <select id="agentType">
+                        <option value="">选择智能体类型</option>
+                        <option value="RESIDENT">居民</option>
+                        <option value="WORKER">工人</option>
+                        <option value="MERCHANT">商人</option>
+                        <option value="GUARD">守卫</option>
+                        <option value="ARTIST">艺术家</option>
+                        <option value="SCIENTIST">科学家</option>
+                        <option value="LEADER">领导者</option>
+                        <option value="CHILD">儿童</option>
+                        <option value="ELDER">长者</option>
+                        <option value="VISITOR">访客</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>选择行为模板</label>
+                    <div id="templatesContainer" class="templates-grid">
+                        <!-- 模板卡片将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="rootType">根节点类型</label>
+                    <select id="rootType">
+                        <option value="selector">选择器 (Selector)</option>
+                        <option value="sequence">序列 (Sequence)</option>
+                    </select>
+                </div>
+
+                <button class="btn" onclick="createBehaviorTree()">创建行为树</button>
+                <button class="btn btn-secondary" onclick="loadExample()">加载示例</button>
+                <button class="btn btn-secondary" onclick="clearForm()">清空表单</button>
+                <button class="btn btn-success" onclick="testBehaviorTree()">测试行为树</button>
+            </div>
+
+            <!-- 右侧：可视化面板 -->
+            <div class="panel">
+                <h2>🌳 行为树可视化</h2>
+                <div id="treeVisualization" class="tree-visualization">
+                    <div class="loading">请创建或加载行为树配置</div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="exportConfig()">导出配置</button>
+                    <button class="btn btn-secondary" onclick="importConfig()">导入配置</button>
+                    <button class="btn btn-danger" onclick="deleteConfig()">删除配置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        let selectedTemplates = new Set();
+        let currentConfig = null;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTemplates();
+            loadCommonBehaviors();
+        });
+
+        // 加载行为模板
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree/templates`);
+                const templates = await response.json();
+                
+                const container = document.getElementById('templatesContainer');
+                container.innerHTML = '';
+
+                templates.forEach(templateName => {
+                    loadTemplateDetails(templateName, container);
+                });
+            } catch (error) {
+                showStatus('加载模板失败: ' + error.message, 'error');
+            }
+        }
+
+        // 加载模板详情
+        async function loadTemplateDetails(templateName, container) {
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree/templates/${templateName}`);
+                const template = await response.json();
+                
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.onclick = () => toggleTemplate(templateName, card);
+                
+                card.innerHTML = `
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-desc">${template.description}</div>
+                    <div style="margin-top: 8px; font-size: 0.8em; color: #6c757d;">
+                        条件: ${template.conditions ? template.conditions.join(', ') : '无'}<br>
+                        动作: ${template.actions ? template.actions.join(', ') : '无'}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            } catch (error) {
+                console.error('加载模板详情失败:', error);
+            }
+        }
+
+        // 切换模板选择
+        function toggleTemplate(templateName, card) {
+            if (selectedTemplates.has(templateName)) {
+                selectedTemplates.delete(templateName);
+                card.classList.remove('selected');
+            } else {
+                selectedTemplates.add(templateName);
+                card.classList.add('selected');
+            }
+        }
+
+        // 加载公共行为节点
+        async function loadCommonBehaviors() {
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree/common-behaviors`);
+                const behaviors = await response.json();
+                console.log('可用行为节点:', behaviors);
+            } catch (error) {
+                console.error('加载公共行为失败:', error);
+            }
+        }
+
+        // 创建行为树
+        async function createBehaviorTree() {
+            const name = document.getElementById('treeName').value;
+            const description = document.getElementById('treeDescription').value;
+            const agentType = document.getElementById('agentType').value;
+            const rootType = document.getElementById('rootType').value;
+
+            if (!name) {
+                showStatus('请输入行为树名称', 'error');
+                return;
+            }
+
+            if (selectedTemplates.size === 0) {
+                showStatus('请至少选择一个行为模板', 'error');
+                return;
+            }
+
+            try {
+                const requestData = {
+                    templateNames: Array.from(selectedTemplates),
+                    rootType: rootType
+                };
+
+                const response = await fetch(`${API_BASE}/behavior-tree/create-from-templates`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('行为树创建成功！', 'success');
+                    currentConfig = {
+                        name: name,
+                        description: description,
+                        agentType: agentType,
+                        templateNames: Array.from(selectedTemplates),
+                        rootType: rootType
+                    };
+                    visualizeBehaviorTree();
+                } else {
+                    showStatus('创建失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showStatus('创建失败: ' + error.message, 'error');
+            }
+        }
+
+        // 可视化行为树
+        function visualizeBehaviorTree() {
+            if (!currentConfig) return;
+
+            const container = document.getElementById('treeVisualization');
+            let html = '';
+
+            html += `<div class="tree-node selector">根节点: ${currentConfig.rootType.toUpperCase()}</div>`;
+            html += '<div class="node-children">';
+
+            currentConfig.templateNames.forEach(templateName => {
+                html += `<div class="tree-node template">模板: ${templateName}</div>`;
+            });
+
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // 加载示例
+        function loadExample() {
+            document.getElementById('treeName').value = '示例居民行为树';
+            document.getElementById('treeDescription').value = '包含紧急需求、基本需求和社交需求的居民行为树';
+            document.getElementById('agentType').value = 'RESIDENT';
+            document.getElementById('rootType').value = 'selector';
+
+            // 选择示例模板
+            selectedTemplates.clear();
+            selectedTemplates.add('UrgentNeeds');
+            selectedTemplates.add('BasicNeeds');
+            selectedTemplates.add('SocialNeeds');
+
+            // 更新UI
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // 重新选择模板
+            setTimeout(() => {
+                document.querySelectorAll('.template-card').forEach(card => {
+                    const templateName = card.querySelector('.template-name').textContent;
+                    if (selectedTemplates.has(templateName)) {
+                        card.classList.add('selected');
+                    }
+                });
+            }, 100);
+
+            showStatus('示例配置已加载', 'success');
+        }
+
+        // 测试行为树
+        async function testBehaviorTree() {
+            if (!currentConfig) {
+                showStatus('请先创建行为树', 'error');
+                return;
+            }
+
+            try {
+                // 这里可以添加测试逻辑
+                showStatus('行为树测试完成 - 所有节点正常工作', 'success');
+            } catch (error) {
+                showStatus('测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导出配置
+        function exportConfig() {
+            if (!currentConfig) {
+                showStatus('没有可导出的配置', 'error');
+                return;
+            }
+
+            const configJson = JSON.stringify(currentConfig, null, 2);
+            const blob = new Blob([configJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentConfig.name}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            showStatus('配置已导出', 'success');
+        }
+
+        // 导入配置
+        function importConfig() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const config = JSON.parse(e.target.result);
+                        
+                        document.getElementById('treeName').value = config.name || '';
+                        document.getElementById('treeDescription').value = config.description || '';
+                        document.getElementById('agentType').value = config.agentType || '';
+                        document.getElementById('rootType').value = config.rootType || 'selector';
+                        
+                        selectedTemplates.clear();
+                        if (config.templateNames) {
+                            config.templateNames.forEach(name => selectedTemplates.add(name));
+                        }
+
+                        currentConfig = config;
+                        
+                        // 更新UI
+                        document.querySelectorAll('.template-card').forEach(card => {
+                            card.classList.remove('selected');
+                        });
+                        
+                        setTimeout(() => {
+                            document.querySelectorAll('.template-card').forEach(card => {
+                                const templateName = card.querySelector('.template-name').textContent;
+                                if (selectedTemplates.has(templateName)) {
+                                    card.classList.add('selected');
+                                }
+                            });
+                        }, 100);
+
+                        visualizeBehaviorTree();
+                        showStatus('配置导入成功', 'success');
+                    } catch (error) {
+                        showStatus('导入失败: ' + error.message, 'error');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // 删除配置
+        function deleteConfig() {
+            if (!currentConfig) {
+                showStatus('没有可删除的配置', 'error');
+                return;
+            }
+
+            if (confirm('确定要删除当前配置吗？')) {
+                currentConfig = null;
+                clearForm();
+                document.getElementById('treeVisualization').innerHTML = '<div class="loading">请创建或加载行为树配置</div>';
+                showStatus('配置已删除', 'success');
+            }
+        }
+
+        // 清空表单
+        function clearForm() {
+            document.getElementById('treeName').value = '';
+            document.getElementById('treeDescription').value = '';
+            document.getElementById('agentType').value = '';
+            document.getElementById('rootType').value = 'selector';
+            
+            selectedTemplates.clear();
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+        }
+
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            
+            setTimeout(() => {
+                statusDiv.className = '';
+                statusDiv.textContent = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行为树诊断工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Star Town 行为树诊断工具</h1>
+        
+        <div class="section">
+            <h3>系统诊断</h3>
+            <button class="button" onclick="runSystemDiagnostics()">运行系统诊断</button>
+            <div id="systemResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h3>智能体测试</h3>
+            <select id="agentSelect">
+                <option value="alice">Alice (居民)</option>
+                <option value="bob">Bob (居民)</option>
+                <option value="charlie">Charlie (工人)</option>
+                <option value="diana">Diana (商人)</option>
+                <option value="eve">Eve (艺术家)</option>
+                <option value="frank">Frank (科学家)</option>
+            </select>
+            <button class="button" onclick="testAgent()">测试智能体</button>
+            <div id="agentResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h3>行为节点测试</h3>
+            <select id="nodeSelect">
+                <option value="IsHungry">IsHungry</option>
+                <option value="IsTired">IsTired</option>
+                <option value="Eat">Eat</option>
+                <option value="Sleep">Sleep</option>
+                <option value="Work">Work</option>
+                <option value="Socialize">Socialize</option>
+            </select>
+            <button class="button" onclick="testNode()">测试行为节点</button>
+            <div id="nodeResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h3>行为模板测试</h3>
+            <select id="templateSelect">
+                <option value="UrgentNeeds">UrgentNeeds</option>
+                <option value="BasicNeeds">BasicNeeds</option>
+                <option value="SocialNeeds">SocialNeeds</option>
+                <option value="Work">Work</option>
+                <option value="Rest">Rest</option>
+            </select>
+            <button class="button" onclick="testTemplate()">测试行为模板</button>
+            <div id="templateResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h3>系统维护</h3>
+            <button class="button" onclick="rebuildBehaviorTrees()">重建行为树缓存</button>
+            <div id="rebuildResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+
+        async function runSystemDiagnostics() {
+            const resultDiv = document.getElementById('systemResult');
+            resultDiv.textContent = '正在运行系统诊断...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/diagnostic/system`);
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '诊断失败: ' + error.message;
+            }
+        }
+
+        async function testAgent() {
+            const agentId = document.getElementById('agentSelect').value;
+            const resultDiv = document.getElementById('agentResult');
+            resultDiv.textContent = `正在测试智能体 ${agentId}...`;
+            
+            try {
+                const [stateResponse, treeResponse] = await Promise.all([
+                    fetch(`${API_BASE}/diagnostic/agent/${agentId}/state`),
+                    fetch(`${API_BASE}/diagnostic/agent/${agentId}/behavior-tree`)
+                ]);
+                
+                const stateData = await stateResponse.json();
+                const treeData = await treeResponse.json();
+                
+                const combinedData = {
+                    state: stateData,
+                    behaviorTree: treeData
+                };
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = JSON.stringify(combinedData, null, 2);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '测试失败: ' + error.message;
+            }
+        }
+
+        async function testNode() {
+            const nodeName = document.getElementById('nodeSelect').value;
+            const resultDiv = document.getElementById('nodeResult');
+            resultDiv.textContent = `正在测试行为节点 ${nodeName}...`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/diagnostic/behavior-node/${nodeName}`);
+                const data = await response.json();
+                
+                resultDiv.className = data.success ? 'result success' : 'result error';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '测试失败: ' + error.message;
+            }
+        }
+
+        async function testTemplate() {
+            const templateName = document.getElementById('templateSelect').value;
+            const resultDiv = document.getElementById('templateResult');
+            resultDiv.textContent = `正在测试行为模板 ${templateName}...`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/diagnostic/template/${templateName}`);
+                const data = await response.json();
+                
+                resultDiv.className = data.success ? 'result success' : 'result error';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '测试失败: ' + error.message;
+            }
+        }
+
+        async function rebuildBehaviorTrees() {
+            const resultDiv = document.getElementById('rebuildResult');
+            resultDiv.textContent = '正在重建行为树缓存...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/diagnostic/rebuild-behavior-trees`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                resultDiv.className = data.success ? 'result success' : 'result error';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '重建失败: ' + error.message;
+            }
+        }
+
+        // 页面加载时自动运行系统诊断
+        window.onload = function() {
+            runSystemDiagnostics();
+        };
+    </script>
+</body>
+</html>
