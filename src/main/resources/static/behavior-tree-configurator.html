@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Town - 行为树配置器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 0;
+            height: calc(100vh - 200px);
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 2px solid #e9ecef;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .canvas-area {
+            padding: 25px;
+            background: white;
+            overflow: auto;
+            position: relative;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .node-palette {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .palette-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            cursor: grab;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .palette-item:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .palette-item.sequence {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .palette-item.selector {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .palette-item.condition {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .palette-item.action {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .canvas {
+            width: 100%;
+            height: 100%;
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            position: relative;
+            background: #fafafa;
+            min-height: 600px;
+        }
+
+        .tree-node {
+            position: absolute;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px 16px;
+            cursor: move;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-width: 120px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tree-node:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .tree-node.selected {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2);
+        }
+
+        .tree-node.sequence {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+        }
+
+        .tree-node.selector {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+        }
+
+        .tree-node.condition {
+            border-color: #17a2b8;
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+        }
+
+        .tree-node.action {
+            border-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+
+        .tree-node .node-type {
+            font-size: 10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .tree-node .node-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: #6c757d;
+            z-index: 1;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .properties-panel {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .properties-panel h4 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .node-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .node-item {
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .node-item:hover {
+            background: #f8f9fa;
+        }
+
+        .node-item.selected {
+            background: #e3f2fd;
+            border-left: 4px solid #4facfe;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .zoom-controls button {
+            padding: 8px 12px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .zoom-controls button:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 300px 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 2px solid #e9ecef;
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌳 Star Town 行为树配置器</h1>
+            <p>可视化创建和编辑智能体行为树</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧配置面板 -->
+            <div class="sidebar">
+                <div id="status"></div>
+
+                <!-- 行为树基本信息 -->
+                <div class="section">
+                    <h3>📋 基本信息</h3>
+                    <div class="form-group">
+                        <label for="treeName">行为树名称</label>
+                        <input type="text" id="treeName" placeholder="输入行为树名称">
+                    </div>
+                    <div class="form-group">
+                        <label for="treeDescription">描述</label>
+                        <textarea id="treeDescription" rows="3" placeholder="输入行为树描述"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="agentType">智能体类型</label>
+                        <select id="agentType">
+                            <option value="">选择智能体类型</option>
+                            <option value="RESIDENT">居民</option>
+                            <option value="WORKER">工人</option>
+                            <option value="MERCHANT">商人</option>
+                            <option value="GUARD">守卫</option>
+                            <option value="ARTIST">艺术家</option>
+                            <option value="SCIENTIST">科学家</option>
+                            <option value="LEADER">领导者</option>
+                            <option value="CHILD">儿童</option>
+                            <option value="ELDER">长者</option>
+                            <option value="VISITOR">访客</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 节点调色板 -->
+                <div class="section">
+                    <h3>🎨 节点调色板</h3>
+                    <div class="node-palette">
+                        <div class="palette-item sequence" data-type="sequence" data-name="Sequence">
+                            <div>Sequence</div>
+                            <small>序列节点</small>
+                        </div>
+                        <div class="palette-item selector" data-type="selector" data-name="Selector">
+                            <div>Selector</div>
+                            <small>选择节点</small>
+                        </div>
+                        <div class="palette-item condition" data-type="condition" data-name="IsHungry">
+                            <div>IsHungry</div>
+                            <small>条件节点</small>
+                        </div>
+                        <div class="palette-item condition" data-type="condition" data-name="IsTired">
+                            <div>IsTired</div>
+                            <small>条件节点</small>
+                        </div>
+                        <div class="palette-item action" data-type="action" data-name="Eat">
+                            <div>Eat</div>
+                            <small>动作节点</small>
+                        </div>
+                        <div class="palette-item action" data-type="action" data-name="Sleep">
+                            <div>Sleep</div>
+                            <small>动作节点</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作控制 -->
+                <div class="section">
+                    <h3>⚙️ 操作控制</h3>
+                    <div class="controls">
+                        <button class="btn btn-small" onclick="clearCanvas()">清空画布</button>
+                        <button class="btn btn-small btn-secondary" onclick="loadExample()">加载示例</button>
+                        <button class="btn btn-small btn-success" onclick="saveTree()">保存行为树</button>
+                        <button class="btn btn-small btn-secondary" onclick="exportTree()">导出JSON</button>
+                        <button class="btn btn-small btn-secondary" onclick="importTree()">导入JSON</button>
+                    </div>
+                </div>
+
+                <!-- 缩放控制 -->
+                <div class="section">
+                    <h3>🔍 视图控制</h3>
+                    <div class="zoom-controls">
+                        <button onclick="zoomIn()">放大</button>
+                        <button onclick="zoomOut()">缩小</button>
+                        <button onclick="resetZoom()">重置</button>
+                        <button onclick="fitToScreen()">适应屏幕</button>
+                    </div>
+                </div>
+
+                <!-- 节点列表 -->
+                <div class="section">
+                    <h3>📝 节点列表</h3>
+                    <div class="node-list" id="nodeList">
+                        <!-- 节点列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 属性面板 -->
+                <div class="properties-panel" id="propertiesPanel" style="display: none;">
+                    <h4>属性设置</h4>
+                    <div id="propertyFields">
+                        <!-- 属性字段将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧画布区域 -->
+            <div class="canvas-area">
+                <div class="canvas" id="canvas" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <!-- 行为树节点将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let nodes = [];
+        let connections = [];
+        let selectedNode = null;
+        let nodeCounter = 0;
+        let zoomLevel = 1;
+        let canvasOffset = { x: 0, y: 0 };
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+
+        // 节点类型定义
+        const nodeTypes = {
+            sequence: { name: 'Sequence', color: '#28a745', bg: '#d4edda' },
+            selector: { name: 'Selector', color: '#ffc107', bg: '#fff3cd' },
+            condition: { name: 'Condition', color: '#17a2b8', bg: '#d1ecf1' },
+            action: { name: 'Action', color: '#dc3545', bg: '#f8d7da' }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCanvas();
+            setupEventListeners();
+            updateNodeList();
+        });
+
+        // 初始化画布
+        function initializeCanvas() {
+            const canvas = document.getElementById('canvas');
+            
+            // 设置画布事件监听
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('wheel', handleWheel);
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 调色板拖拽事件
+            document.querySelectorAll('.palette-item').forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.draggable = true;
+            });
+
+            // 画布点击事件
+            document.getElementById('canvas').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    deselectAllNodes();
+                }
+            });
+        }
+
+        // 处理拖拽开始
+        function handleDragStart(e) {
+            const nodeType = e.target.dataset.type;
+            const nodeName = e.target.dataset.name;
+            e.dataTransfer.setData('text/plain', JSON.stringify({ type: nodeType, name: nodeName }));
+        }
+
+        // 允许放置
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        // 处理放置
+        function drop(e) {
+            e.preventDefault();
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const rect = e.target.getBoundingClientRect();
+            const x = (e.clientX - rect.left - canvasOffset.x) / zoomLevel;
+            const y = (e.clientY - rect.top - canvasOffset.y) / zoomLevel;
+            
+            createNode(data.type, data.name, x, y);
+        }
+
+        // 创建节点
+        function createNode(type, name, x, y) {
+            nodeCounter++;
+            const node = {
+                id: `node_${nodeCounter}`,
+                type: type,
+                name: name,
+                x: x,
+                y: y,
+                width: 120,
+                height: 60,
+                children: []
+            };
+            
+            nodes.push(node);
+            renderNode(node);
+            updateNodeList();
+            showStatus(`创建了 ${nodeTypes[type].name} 节点: ${name}`, 'success');
+        }
+
+        // 渲染节点
+        function renderNode(node) {
+            const canvas = document.getElementById('canvas');
+            const nodeElement = document.createElement('div');
+            
+            nodeElement.className = `tree-node ${node.type}`;
+            nodeElement.id = node.id;
+            nodeElement.style.left = (node.x + canvasOffset.x) * zoomLevel + 'px';
+            nodeElement.style.top = (node.y + canvasOffset.y) * zoomLevel + 'px';
+            nodeElement.style.transform = `scale(${zoomLevel})`;
+            nodeElement.style.transformOrigin = '0 0';
+            
+            nodeElement.innerHTML = `
+                <div class="node-type">${nodeTypes[node.type].name}</div>
+                <div class="node-name">${node.name}</div>
+            `;
+            
+            // 添加事件监听器
+            nodeElement.addEventListener('click', function(e) {
+                e.stopPropagation();
+                selectNode(node);
+            });
+            
+            nodeElement.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                startNodeDrag(node, e);
+            });
+            
+            nodeElement.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showNodeContextMenu(node, e);
+            });
+            
+            canvas.appendChild(nodeElement);
+        }
+
+        // 选择节点
+        function selectNode(node) {
+            deselectAllNodes();
+            selectedNode = node;
+            
+            const nodeElement = document.getElementById(node.id);
+            nodeElement.classList.add('selected');
+            
+            // 更新节点列表选中状态
+            updateNodeList();
+            
+            // 显示属性面板
+            showPropertiesPanel(node);
+        }
+
+        // 取消选择所有节点
+        function deselectAllNodes() {
+            selectedNode = null;
+            document.querySelectorAll('.tree-node').forEach(node => {
+                node.classList.remove('selected');
+            });
+            document.querySelectorAll('.node-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.getElementById('propertiesPanel').style.display = 'none';
+        }
+
+        // 显示属性面板
+        function showPropertiesPanel(node) {
+            const panel = document.getElementById('propertiesPanel');
+            const fields = document.getElementById('propertyFields');
+            
+            fields.innerHTML = `
+                <div class="form-group">
+                    <label>节点名称</label>
+                    <input type="text" value="${node.name}" onchange="updateNodeProperty('name', this.value)">
+                </div>
+                <div class="form-group">
+                    <label>节点类型</label>
+                    <select onchange="updateNodeProperty('type', this.value)">
+                        <option value="sequence" ${node.type === 'sequence' ? 'selected' : ''}>Sequence</option>
+                        <option value="selector" ${node.type === 'selector' ? 'selected' : ''}>Selector</option>
+                        <option value="condition" ${node.type === 'condition' ? 'selected' : ''}>Condition</option>
+                        <option value="action" ${node.type === 'action' ? 'selected' : ''}>Action</option>
+                    </select>
+                </div>
+                <button class="btn btn-danger btn-small" onclick="deleteNode('${node.id}')">删除节点</button>
+            `;
+            
+            panel.style.display = 'block';
+        }
+
+        // 更新节点属性
+        function updateNodeProperty(property, value) {
+            if (selectedNode) {
+                selectedNode[property] = value;
+                renderAllNodes();
+                updateNodeList();
+                showStatus(`更新了节点属性: ${property} = ${value}`, 'success');
+            }
+        }
+
+        // 删除节点
+        function deleteNode(nodeId) {
+            const nodeIndex = nodes.findIndex(n => n.id === nodeId);
+            if (nodeIndex !== -1) {
+                nodes.splice(nodeIndex, 1);
+                document.getElementById(nodeId).remove();
+                updateNodeList();
+                deselectAllNodes();
+                showStatus('删除了节点', 'success');
+            }
+        }
+
+        // 开始拖拽节点
+        function startNodeDrag(node, e) {
+            isDragging = true;
+            selectedNode = node;
+            selectNode(node);
+            
+            const rect = e.target.getBoundingClientRect();
+            const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+        }
+
+        // 处理鼠标按下
+        function handleMouseDown(e) {
+            if (e.target.id === 'canvas') {
+                // 开始画布拖拽
+                isDragging = true;
+                dragOffset.x = e.clientX;
+                dragOffset.y = e.clientY;
+            }
+        }
+
+        // 处理鼠标移动
+        function handleMouseMove(e) {
+            if (isDragging) {
+                if (selectedNode && selectedNode.id) {
+                    // 拖拽节点
+                    const dx = (e.clientX - dragOffset.x) / zoomLevel;
+                    const dy = (e.clientY - dragOffset.y) / zoomLevel;
+                    
+                    selectedNode.x = Math.max(0, dx);
+                    selectedNode.y = Math.max(0, dy);
+                    
+                    renderAllNodes();
+                } else {
+                    // 拖拽画布
+                    const dx = e.clientX - dragOffset.x;
+                    const dy = e.clientY - dragOffset.y;
+                    
+                    canvasOffset.x += dx;
+                    canvasOffset.y += dy;
+                    
+                    dragOffset.x = e.clientX;
+                    dragOffset.y = e.clientY;
+                    
+                    renderAllNodes();
+                }
+            }
+        }
+
+        // 处理鼠标释放
+        function handleMouseUp(e) {
+            isDragging = false;
+        }
+
+        // 处理滚轮缩放
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoomLevel = Math.max(0.1, Math.min(3, zoomLevel * delta));
+            renderAllNodes();
+        }
+
+        // 渲染所有节点
+        function renderAllNodes() {
+            // 清除现有节点
+            document.querySelectorAll('.tree-node').forEach(node => node.remove());
+            
+            // 重新渲染所有节点
+            nodes.forEach(node => renderNode(node));
+            
+            // 渲染连接线
+            renderConnections();
+        }
+
+        // 渲染连接线
+        function renderConnections() {
+            // 清除现有连接线
+            document.querySelectorAll('.connection-line').forEach(line => line.remove());
+            
+            // 这里可以添加连接线的渲染逻辑
+            // 暂时省略，因为需要实现节点间的父子关系
+        }
+
+        // 更新节点列表
+        function updateNodeList() {
+            const nodeList = document.getElementById('nodeList');
+            nodeList.innerHTML = '';
+            
+            nodes.forEach(node => {
+                const item = document.createElement('div');
+                item.className = `node-item ${selectedNode && selectedNode.id === node.id ? 'selected' : ''}`;
+                item.innerHTML = `
+                    <div style="font-weight: 600;">${node.name}</div>
+                    <small style="color: #6c757d;">${nodeTypes[node.type].name}</small>
+                `;
+                item.addEventListener('click', () => selectNode(node));
+                nodeList.appendChild(item);
+            });
+        }
+
+        // 显示节点右键菜单
+        function showNodeContextMenu(node, e) {
+            // 这里可以添加右键菜单功能
+            console.log('右键点击节点:', node.name);
+        }
+
+        // 缩放功能
+        function zoomIn() {
+            zoomLevel = Math.min(3, zoomLevel * 1.2);
+            renderAllNodes();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(0.1, zoomLevel / 1.2);
+            renderAllNodes();
+        }
+
+        function resetZoom() {
+            zoomLevel = 1;
+            canvasOffset = { x: 0, y: 0 };
+            renderAllNodes();
+        }
+
+        function fitToScreen() {
+            // 计算所有节点的边界框
+            if (nodes.length === 0) return;
+            
+            let minX = Math.min(...nodes.map(n => n.x));
+            let minY = Math.min(...nodes.map(n => n.y));
+            let maxX = Math.max(...nodes.map(n => n.x + n.width));
+            let maxY = Math.max(...nodes.map(n => n.y + n.height));
+            
+            const canvas = document.getElementById('canvas');
+            const canvasWidth = canvas.clientWidth;
+            const canvasHeight = canvas.clientHeight;
+            
+            const contentWidth = maxX - minX;
+            const contentHeight = maxY - minY;
+            
+            zoomLevel = Math.min(canvasWidth / contentWidth, canvasHeight / contentHeight) * 0.8;
+            canvasOffset.x = (canvasWidth - contentWidth * zoomLevel) / 2 - minX * zoomLevel;
+            canvasOffset.y = (canvasHeight - contentHeight * zoomLevel) / 2 - minY * zoomLevel;
+            
+            renderAllNodes();
+        }
+
+        // 清空画布
+        function clearCanvas() {
+            if (confirm('确定要清空画布吗？')) {
+                nodes = [];
+                connections = [];
+                selectedNode = null;
+                document.getElementById('canvas').innerHTML = '';
+                updateNodeList();
+                deselectAllNodes();
+                showStatus('画布已清空', 'info');
+            }
+        }
+
+        // 加载示例
+        function loadExample() {
+            clearCanvas();
+            
+            // 创建示例行为树
+            createNode('selector', 'RootSelector', 200, 50);
+            createNode('sequence', 'EatSequence', 50, 150);
+            createNode('condition', 'IsHungry', 20, 250);
+            createNode('action', 'Eat', 20, 350);
+            
+            createNode('sequence', 'SleepSequence', 200, 150);
+            createNode('condition', 'IsTired', 170, 250);
+            createNode('action', 'Sleep', 170, 350);
+            
+            createNode('sequence', 'WorkSequence', 350, 150);
+            createNode('condition', 'HasWorkplace', 320, 250);
+            createNode('action', 'Work', 320, 350);
+            
+            showStatus('加载了示例行为树', 'success');
+        }
+
+        // 保存行为树
+        function saveTree() {
+            const treeName = document.getElementById('treeName').value;
+            const treeDescription = document.getElementById('treeDescription').value;
+            const agentType = document.getElementById('agentType').value;
+            
+            if (!treeName) {
+                showStatus('请输入行为树名称', 'error');
+                return;
+            }
+            
+            const treeConfig = {
+                name: treeName,
+                description: treeDescription,
+                agentType: agentType,
+                nodes: nodes,
+                connections: connections,
+                createdAt: new Date().toISOString()
+            };
+            
+            // 这里应该调用API保存到服务器
+            console.log('保存行为树:', treeConfig);
+            showStatus('行为树已保存', 'success');
+        }
+
+        // 导出行为树
+        function exportTree() {
+            const treeConfig = {
+                name: document.getElementById('treeName').value,
+                description: document.getElementById('treeDescription').value,
+                agentType: document.getElementById('agentType').value,
+                nodes: nodes,
+                connections: connections,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(treeConfig, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${treeConfig.name || 'behavior-tree'}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            showStatus('行为树已导出', 'success');
+        }
+
+        // 导入行为树
+        function importTree() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const treeConfig = JSON.parse(e.target.result);
+                            loadTreeConfig(treeConfig);
+                            showStatus('行为树已导入', 'success');
+                        } catch (error) {
+                            showStatus('导入失败: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            
+            input.click();
+        }
+
+        // 加载行为树配置
+        function loadTreeConfig(config) {
+            clearCanvas();
+            
+            document.getElementById('treeName').value = config.name || '';
+            document.getElementById('treeDescription').value = config.description || '';
+            document.getElementById('agentType').value = config.agentType || '';
+            
+            nodes = config.nodes || [];
+            connections = config.connections || [];
+            
+            renderAllNodes();
+            updateNodeList();
+        }
+
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            
+            setTimeout(() => {
+                statusDiv.className = '';
+                statusDiv.textContent = '';
+            }, 3000);
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Delete' && selectedNode) {
+                deleteNode(selectedNode.id);
+            } else if (e.key === 'Escape') {
+                deselectAllNodes();
+            }
+        });
+    </script>
+</body>
+</html>

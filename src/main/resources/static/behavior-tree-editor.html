@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Town - 行为树编辑器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 0;
+            height: calc(100vh - 200px);
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 2px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .canvas-area {
+            padding: 20px;
+            background: white;
+            overflow: auto;
+            position: relative;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            color: #495057;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 6px 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .node-palette {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .palette-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            padding: 6px;
+            text-align: center;
+            cursor: grab;
+            font-size: 11px;
+            transition: all 0.3s;
+        }
+
+        .palette-item:hover {
+            border-color: #4facfe;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .palette-item.sequence {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .palette-item.selector {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .palette-item.condition {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .palette-item.action {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .canvas {
+            width: 100%;
+            height: 100%;
+            border: 2px dashed #e9ecef;
+            border-radius: 6px;
+            position: relative;
+            background: #fafafa;
+            min-height: 500px;
+        }
+
+        .tree-node {
+            position: absolute;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: move;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            min-width: 100px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tree-node:hover {
+            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+
+        .tree-node.selected {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.2);
+        }
+
+        .tree-node.sequence {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+        }
+
+        .tree-node.selector {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+        }
+
+        .tree-node.condition {
+            border-color: #17a2b8;
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+        }
+
+        .tree-node.action {
+            border-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+
+        .tree-node .node-type {
+            font-size: 9px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .tree-node .node-name {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status {
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .node-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+
+        .node-item {
+            padding: 6px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 11px;
+        }
+
+        .node-item:hover {
+            background: #f8f9fa;
+        }
+
+        .node-item.selected {
+            background: #e3f2fd;
+            border-left: 3px solid #4facfe;
+        }
+
+        .template-list {
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+
+        .template-item {
+            padding: 6px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 11px;
+        }
+
+        .template-item:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 250px 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 2px solid #e9ecef;
+                max-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌳 Star Town 行为树编辑器</h1>
+            <p>可视化创建和编辑智能体行为树</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧配置面板 -->
+            <div class="sidebar">
+                <div id="status"></div>
+
+                <!-- 行为树基本信息 -->
+                <div class="section">
+                    <h3>📋 基本信息</h3>
+                    <div class="form-group">
+                        <label for="treeName">行为树名称</label>
+                        <input type="text" id="treeName" placeholder="输入行为树名称">
+                    </div>
+                    <div class="form-group">
+                        <label for="treeDescription">描述</label>
+                        <textarea id="treeDescription" rows="2" placeholder="输入行为树描述"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="agentType">智能体类型</label>
+                        <select id="agentType" onchange="loadAgentTree()">
+                            <option value="">选择智能体类型</option>
+                            <option value="RESIDENT">居民</option>
+                            <option value="WORKER">工人</option>
+                            <option value="MERCHANT">商人</option>
+                            <option value="GUARD">守卫</option>
+                            <option value="ARTIST">艺术家</option>
+                            <option value="SCIENTIST">科学家</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 节点调色板 -->
+                <div class="section">
+                    <h3>🎨 节点调色板</h3>
+                    <div class="node-palette" id="nodePalette">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+
+                <!-- 操作控制 -->
+                <div class="section">
+                    <h3>⚙️ 操作控制</h3>
+                    <div class="controls">
+                        <button class="btn btn-small" onclick="clearCanvas()">清空</button>
+                        <button class="btn btn-small btn-secondary" onclick="loadExample()">示例</button>
+                        <button class="btn btn-small btn-success" onclick="saveTree()">保存</button>
+                        <button class="btn btn-small btn-secondary" onclick="validateTree()">验证</button>
+                        <button class="btn btn-small btn-secondary" onclick="exportTree()">导出</button>
+                        <button class="btn btn-small btn-secondary" onclick="importTree()">导入</button>
+                    </div>
+                </div>
+
+                <!-- 行为模板 -->
+                <div class="section">
+                    <h3>📝 行为模板</h3>
+                    <div class="template-list" id="templateList">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+
+                <!-- 节点列表 -->
+                <div class="section">
+                    <h3>📋 节点列表</h3>
+                    <div class="node-list" id="nodeList">
+                        <!-- 节点列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧画布区域 -->
+            <div class="canvas-area">
+                <div class="canvas" id="canvas" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <!-- 行为树节点将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const API_BASE = 'http://localhost:8080/api';
+        let nodes = [];
+        let connections = [];
+        let selectedNode = null;
+        let nodeCounter = 0;
+        let nodeTypes = {};
+        let templates = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCanvas();
+            loadNodeTypes();
+            loadTemplates();
+            setupEventListeners();
+        });
+
+        // 初始化画布
+        function initializeCanvas() {
+            const canvas = document.getElementById('canvas');
+            
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    deselectAllNodes();
+                }
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Delete' && selectedNode) {
+                    deleteNode(selectedNode.id);
+                } else if (e.key === 'Escape') {
+                    deselectAllNodes();
+                }
+            });
+        }
+
+        // 加载节点类型
+        async function loadNodeTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree-visualization/node-types`);
+                const data = await response.json();
+                
+                nodeTypes = data;
+                renderNodePalette();
+                
+            } catch (error) {
+                console.error('加载节点类型失败:', error);
+                showStatus('加载节点类型失败: ' + error.message, 'error');
+            }
+        }
+
+        // 渲染节点调色板
+        function renderNodePalette() {
+            const palette = document.getElementById('nodePalette');
+            palette.innerHTML = '';
+
+            // 基础节点类型
+            if (nodeTypes.baseTypes) {
+                Object.entries(nodeTypes.baseTypes).forEach(([type, info]) => {
+                    const item = document.createElement('div');
+                    item.className = `palette-item ${type}`;
+                    item.innerHTML = `
+                        <div>${info.name}</div>
+                        <small>${info.description}</small>
+                    `;
+                    item.draggable = true;
+                    item.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({ 
+                            type: type, 
+                            name: info.name 
+                        }));
+                    });
+                    palette.appendChild(item);
+                });
+            }
+
+            // 条件节点
+            if (nodeTypes.conditions) {
+                Object.entries(nodeTypes.conditions).forEach(([name, info]) => {
+                    const item = document.createElement('div');
+                    item.className = 'palette-item condition';
+                    item.innerHTML = `
+                        <div>${info.name}</div>
+                        <small>${info.description}</small>
+                    `;
+                    item.draggable = true;
+                    item.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({ 
+                            type: 'condition', 
+                            name: info.name 
+                        }));
+                    });
+                    palette.appendChild(item);
+                });
+            }
+
+            // 动作节点
+            if (nodeTypes.actions) {
+                Object.entries(nodeTypes.actions).forEach(([name, info]) => {
+                    const item = document.createElement('div');
+                    item.className = 'palette-item action';
+                    item.innerHTML = `
+                        <div>${info.name}</div>
+                        <small>${info.description}</small>
+                    `;
+                    item.draggable = true;
+                    item.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({ 
+                            type: 'action', 
+                            name: info.name 
+                        }));
+                    });
+                    palette.appendChild(item);
+                });
+            }
+        }
+
+        // 加载行为模板
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree-visualization/templates`);
+                const data = await response.json();
+                
+                templates = data;
+                renderTemplates();
+                
+            } catch (error) {
+                console.error('加载模板失败:', error);
+                showStatus('加载模板失败: ' + error.message, 'error');
+            }
+        }
+
+        // 渲染模板列表
+        function renderTemplates() {
+            const templateList = document.getElementById('templateList');
+            templateList.innerHTML = '';
+
+            templates.forEach(template => {
+                const item = document.createElement('div');
+                item.className = 'template-item';
+                item.innerHTML = `
+                    <div style="font-weight: 600;">${template.name}</div>
+                    <small style="color: #6c757d;">${template.description}</small>
+                `;
+                item.addEventListener('click', () => applyTemplate(template));
+                templateList.appendChild(item);
+            });
+        }
+
+        // 应用模板
+        function applyTemplate(template) {
+            if (confirm(`确定要应用模板 "${template.name}" 吗？这将清空当前画布。`)) {
+                clearCanvas();
+                
+                // 应用模板节点
+                template.nodes.forEach(nodeData => {
+                    createNode(nodeData.type, nodeData.name, nodeData.x, nodeData.y);
+                });
+                
+                showStatus(`已应用模板: ${template.name}`, 'success');
+            }
+        }
+
+        // 加载智能体行为树
+        async function loadAgentTree() {
+            const agentType = document.getElementById('agentType').value;
+            if (!agentType) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree-visualization/tree/${agentType}`);
+                const data = await response.json();
+                
+                if (data.nodes) {
+                    clearCanvas();
+                    loadTreeData(data);
+                    showStatus(`已加载 ${agentType} 行为树`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('加载智能体行为树失败:', error);
+                showStatus('加载智能体行为树失败: ' + error.message, 'error');
+            }
+        }
+
+        // 加载树数据
+        function loadTreeData(treeData) {
+            nodes = treeData.nodes || [];
+            connections = treeData.edges || [];
+            
+            // 重新渲染所有节点
+            renderAllNodes();
+            updateNodeList();
+        }
+
+        // 允许放置
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        // 处理放置
+        function drop(e) {
+            e.preventDefault();
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            createNode(data.type, data.name, x, y);
+        }
+
+        // 创建节点
+        function createNode(type, name, x, y) {
+            nodeCounter++;
+            const node = {
+                id: `node_${nodeCounter}`,
+                type: type,
+                name: name,
+                x: x,
+                y: y,
+                width: 100,
+                height: 50
+            };
+            
+            nodes.push(node);
+            renderNode(node);
+            updateNodeList();
+            showStatus(`创建了 ${node.name} 节点`, 'success');
+        }
+
+        // 渲染节点
+        function renderNode(node) {
+            const canvas = document.getElementById('canvas');
+            const nodeElement = document.createElement('div');
+            
+            nodeElement.className = `tree-node ${node.type}`;
+            nodeElement.id = node.id;
+            nodeElement.style.left = node.x + 'px';
+            nodeElement.style.top = node.y + 'px';
+            
+            nodeElement.innerHTML = `
+                <div class="node-type">${getNodeTypeName(node.type)}</div>
+                <div class="node-name">${node.name}</div>
+            `;
+            
+            nodeElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectNode(node);
+            });
+            
+            nodeElement.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startNodeDrag(node, e);
+            });
+            
+            nodeElement.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                deleteNode(node.id);
+            });
+            
+            canvas.appendChild(nodeElement);
+        }
+
+        // 获取节点类型名称
+        function getNodeTypeName(type) {
+            if (nodeTypes.baseTypes && nodeTypes.baseTypes[type]) {
+                return nodeTypes.baseTypes[type].name;
+            }
+            return type.charAt(0).toUpperCase() + type.slice(1);
+        }
+
+        // 选择节点
+        function selectNode(node) {
+            deselectAllNodes();
+            selectedNode = node;
+            
+            const nodeElement = document.getElementById(node.id);
+            nodeElement.classList.add('selected');
+            updateNodeList();
+        }
+
+        // 取消选择所有节点
+        function deselectAllNodes() {
+            selectedNode = null;
+            document.querySelectorAll('.tree-node').forEach(node => {
+                node.classList.remove('selected');
+            });
+            document.querySelectorAll('.node-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+
+        // 开始拖拽节点
+        function startNodeDrag(node, e) {
+            selectedNode = node;
+            selectNode(node);
+            
+            const rect = e.target.getBoundingClientRect();
+            dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            isDragging = true;
+        }
+
+        // 处理鼠标按下
+        function handleMouseDown(e) {
+            if (e.target.id === 'canvas') {
+                isDragging = true;
+                dragOffset = { x: e.clientX, y: e.clientY };
+            }
+        }
+
+        // 处理鼠标移动
+        function handleMouseMove(e) {
+            if (isDragging) {
+                if (selectedNode) {
+                    // 拖拽节点
+                    const dx = e.clientX - dragOffset.x;
+                    const dy = e.clientY - dragOffset.y;
+                    
+                    selectedNode.x = Math.max(0, dx);
+                    selectedNode.y = Math.max(0, dy);
+                    
+                    renderAllNodes();
+                }
+            }
+        }
+
+        // 处理鼠标释放
+        function handleMouseUp(e) {
+            isDragging = false;
+        }
+
+        // 渲染所有节点
+        function renderAllNodes() {
+            document.querySelectorAll('.tree-node').forEach(node => node.remove());
+            nodes.forEach(node => renderNode(node));
+        }
+
+        // 更新节点列表
+        function updateNodeList() {
+            const nodeList = document.getElementById('nodeList');
+            nodeList.innerHTML = '';
+            
+            nodes.forEach(node => {
+                const item = document.createElement('div');
+                item.className = `node-item ${selectedNode && selectedNode.id === node.id ? 'selected' : ''}`;
+                item.innerHTML = `
+                    <div style="font-weight: 600;">${node.name}</div>
+                    <small style="color: #6c757d;">${getNodeTypeName(node.type)}</small>
+                `;
+                item.addEventListener('click', () => selectNode(node));
+                nodeList.appendChild(item);
+            });
+        }
+
+        // 删除节点
+        function deleteNode(nodeId) {
+            const nodeIndex = nodes.findIndex(n => n.id === nodeId);
+            if (nodeIndex !== -1) {
+                nodes.splice(nodeIndex, 1);
+                document.getElementById(nodeId).remove();
+                updateNodeList();
+                deselectAllNodes();
+                showStatus('删除了节点', 'success');
+            }
+        }
+
+        // 清空画布
+        function clearCanvas() {
+            if (confirm('确定要清空画布吗？')) {
+                nodes = [];
+                connections = [];
+                selectedNode = null;
+                document.getElementById('canvas').innerHTML = '';
+                updateNodeList();
+                deselectAllNodes();
+                showStatus('画布已清空', 'info');
+            }
+        }
+
+        // 加载示例
+        function loadExample() {
+            clearCanvas();
+            
+            createNode('selector', 'RootSelector', 200, 50);
+            createNode('sequence', 'EatSequence', 50, 150);
+            createNode('condition', 'IsHungry', 20, 250);
+            createNode('action', 'Eat', 20, 350);
+            
+            createNode('sequence', 'SleepSequence', 200, 150);
+            createNode('condition', 'IsTired', 170, 250);
+            createNode('action', 'Sleep', 170, 350);
+            
+            showStatus('加载了示例行为树', 'success');
+        }
+
+        // 保存行为树
+        async function saveTree() {
+            const treeName = document.getElementById('treeName').value;
+            const treeDescription = document.getElementById('treeDescription').value;
+            const agentType = document.getElementById('agentType').value;
+            
+            if (!treeName) {
+                showStatus('请输入行为树名称', 'error');
+                return;
+            }
+            
+            const treeData = {
+                name: treeName,
+                description: treeDescription,
+                agentType: agentType,
+                nodes: nodes,
+                edges: connections
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree-visualization/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(treeData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('行为树保存成功', 'success');
+                } else {
+                    showStatus('保存失败: ' + result.error, 'error');
+                }
+                
+            } catch (error) {
+                showStatus('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        // 验证行为树
+        async function validateTree() {
+            const treeData = {
+                name: document.getElementById('treeName').value,
+                nodes: nodes,
+                edges: connections
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/behavior-tree-visualization/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(treeData)
+                });
+                
+                const result = await response.json();
+                
+                let message = '';
+                if (result.valid) {
+                    message = '行为树验证通过';
+                    if (result.warnings.length > 0) {
+                        message += '\n警告: ' + result.warnings.join(', ');
+                    }
+                    showStatus(message, result.warnings.length > 0 ? 'info' : 'success');
+                } else {
+                    message = '验证失败: ' + result.errors.join(', ');
+                    showStatus(message, 'error');
+                }
+                
+            } catch (error) {
+                showStatus('验证失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导出行为树
+        function exportTree() {
+            const treeData = {
+                name: document.getElementById('treeName').value,
+                description: document.getElementById('treeDescription').value,
+                agentType: document.getElementById('agentType').value,
+                nodes: nodes,
+                edges: connections,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(treeData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${treeData.name || 'behavior-tree'}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            showStatus('行为树已导出', 'success');
+        }
+
+        // 导入行为树
+        function importTree() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const treeData = JSON.parse(e.target.result);
+                            loadTreeData(treeData);
+                            
+                            document.getElementById('treeName').value = treeData.name || '';
+                            document.getElementById('treeDescription').value = treeData.description || '';
+                            document.getElementById('agentType').value = treeData.agentType || '';
+                            
+                            showStatus('行为树已导入', 'success');
+                        } catch (error) {
+                            showStatus('导入失败: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            
+            input.click();
+        }
+
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            
+            setTimeout(() => {
+                statusDiv.className = '';
+                statusDiv.textContent = '';
+            }, 3000);
+        }
+
+        // 全局变量
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+    </script>
+</body>
+</html>
